@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/EtixLabs/migrate/driver"
 	"github.com/EtixLabs/migrate/file"
 	"github.com/EtixLabs/migrate/migrate/direction"
+	"github.com/go-sql-driver/mysql"
 )
 
 type Driver struct {
@@ -75,24 +75,6 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	if err != nil {
 		pipe <- err
 		return
-	}
-
-	if f.Direction == direction.Up {
-		if _, err := tx.Exec("INSERT INTO "+tableName+" (version) VALUES (?)", f.Version); err != nil {
-			pipe <- err
-			if err := tx.Rollback(); err != nil {
-				pipe <- err
-			}
-			return
-		}
-	} else if f.Direction == direction.Down {
-		if _, err := tx.Exec("DELETE FROM "+tableName+" WHERE version = ?", f.Version); err != nil {
-			pipe <- err
-			if err := tx.Rollback(); err != nil {
-				pipe <- err
-			}
-			return
-		}
 	}
 
 	if err := f.ReadContent(); err != nil {
@@ -158,6 +140,24 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 					return
 				}
 			}
+		}
+	}
+
+	if f.Direction == direction.Up {
+		if _, err := tx.Exec("INSERT INTO "+tableName+" (version) VALUES (?)", f.Version); err != nil {
+			pipe <- err
+			if err := tx.Rollback(); err != nil {
+				pipe <- err
+			}
+			return
+		}
+	} else if f.Direction == direction.Down {
+		if _, err := tx.Exec("DELETE FROM "+tableName+" WHERE version = ?", f.Version); err != nil {
+			pipe <- err
+			if err := tx.Rollback(); err != nil {
+				pipe <- err
+			}
+			return
 		}
 	}
 
